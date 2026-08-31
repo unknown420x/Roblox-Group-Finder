@@ -11,13 +11,20 @@ import (
 	"github.com/unknown420x/Roblox-Group-Finder/internal"
 )
 
-const version = "1.0.0"
+var version = "dev"
 
 func main() {
 	cfg, err := internal.LoadConfig()
 	if err != nil {
 		fatal(err)
 	}
+
+	showVersion := flag.Bool(
+		"version",
+		false,
+		"Show version",
+	)
+
 	command := "scan"
 	if len(os.Args) > 1 && !isFlag(os.Args[1]) {
 		command = os.Args[1]
@@ -62,6 +69,10 @@ func main() {
 	cfg.Timeout = *timeout
 	cfg.WebhookURL = *webhook
 	cfg.Unique = *unique
+	if *showVersion {
+		fmt.Printf("Roblox Group Finder by: Samulxz v. %s\n", version)
+		return
+	}
 	if err := cfg.Validate(); err != nil {
 		fatal(err)
 	}
