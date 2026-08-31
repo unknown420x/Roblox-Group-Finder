@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Go and zip
+        run: pacman -Sy --noconfirm go zip
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          targets=(
+            "linux amd64"
+            "linux arm64"
+            "windows amd64"
+            "windows arm64"
+            "darwin amd64"
+            "darwin arm64"
+          )
+          for target in "${targets[@]}"; do
+            read -r goos goarch <<< "$target"
+            ext=""
+            [[ "$goos" == "windows" ]] && ext=".exe"
+            name="groupfinder-${goos}-${goarch}${ext}"
+            echo "Building $name"
+            GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o "dist/$name" ./cli
+          done
+          sha256sum dist/* > dist/SHA256SUMS
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
